@@ -3,6 +3,7 @@ import { sha256 } from '@noble/hashes/sha256'
 
 import { bytesToHex, concatBytes, hexToBytes } from './hex.js'
 import { toAddress, toPublicKey, type Address, type PublicKey } from './types.js'
+import { generatePhrase, seedFromPhrase, validatePhrase, type PhraseOptions } from './recovery-phrase.js'
 
 /**
  * Domain tag for account addresses. An address commits to a key rather than
@@ -43,6 +44,21 @@ export class Wallet {
 
   static create(): Wallet {
     return new Wallet(ed25519.utils.randomPrivateKey())
+  }
+
+  /** Generate a 24-word BIP39 backup. Save it before constructing a wallet. */
+  static generatePhrase(): string {
+    return generatePhrase()
+  }
+
+  /** BIP39 + SLIP-0010 ed25519, m/44'/1'/account'. Passphrase is never retained. */
+  static fromPhrase(phrase: string, options: PhraseOptions = {}): Wallet {
+    return new Wallet(seedFromPhrase(phrase, options))
+  }
+
+  /** Return normalized words or throw a PhraseError with a typed code. */
+  static validatePhrase(phrase: string): string {
+    return validatePhrase(phrase)
   }
 
   static fromSeed(seed: Uint8Array): Wallet {

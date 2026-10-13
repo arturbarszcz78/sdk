@@ -30,6 +30,8 @@ export {
 export type { Timekeeper } from './attestation.js'
 
 export { Wallet, deriveAddress, verifySignature } from './wallet.js'
+export { PhraseError, RECOVERY_PHRASE_COIN_TYPE } from './recovery-phrase.js'
+export type { PhraseErrorCode, PhraseOptions } from './recovery-phrase.js'
 
 export { hashBlock, signBlock } from './hash.js'
 export { marshalAux, marshalCanonical, CANONICAL_SIZES } from './encoding.js'
