@@ -1,6 +1,6 @@
 # 1. Your first wallet
 
-**You will:** install the SDK, create a wallet, keep its seed safe, connect to a
+**You will:** install the SDK, create a wallet, keep its recovery phrase safe, connect to a
 node and read a balance.
 
 **Time:** 5 minutes · **Needs:** Node.js 20 or newer · **Costs:** nothing
@@ -29,7 +29,8 @@ address — is derived from it.
 ```ts
 import { Wallet } from '@xeprotocol/sdk'
 
-const wallet = Wallet.create()
+const phrase = Wallet.generatePhrase() // 24 words: save securely; never log them
+const wallet = Wallet.fromPhrase(phrase)
 console.log(wallet.address)   // your account: hand this out to receive funds
 console.log(wallet.publicKey) // the key that signs for it
 ```
@@ -41,15 +42,30 @@ console.log(wallet.publicKey) // the key that signs for it
 > sends it anywhere. Your keys stay in your process; nodes only ever see signed
 > blocks.
 
-To keep a wallet between runs, write the seed out once and load it back:
+The phrase is standard BIP39 + SLIP-0010 ed25519 at `m/44'/1'/account'`.
+Coin type 1 is provisional; account defaults to 0. Import accepts 12, 15, 18, 21
+or 24 words. The phrase is your only backup unless you save the signing seed
+separately. It cannot be recovered from the signing seed.
+
+To keep a wallet between runs, save the phrase securely and load it back:
 
 ```ts
 import { readFileSync, writeFileSync } from 'node:fs'
 import { Wallet } from '@xeprotocol/sdk'
 
-writeFileSync('wallet.seed', Wallet.create().seedHex(), { mode: 0o600 })
-const wallet = Wallet.fromSeedHex(readFileSync('wallet.seed', 'utf8').trim())
+writeFileSync('wallet.phrase', Wallet.generatePhrase() + '\n', { mode: 0o600, flag: 'wx' })
+const wallet = Wallet.fromPhrase(readFileSync('wallet.phrase', 'utf8'))
 ```
+
+`Wallet.fromPhrase(phrase, { passphrase, account })` supports an explicitly
+chosen BIP39 passphrase and account index. A wrong passphrase opens a different,
+empty account. Keep it separately; the SDK never stores it. Never put the words
+or passphrase on argv or in logs. `Wallet.validatePhrase` throws typed
+`PhraseError` codes for word count, unknown word (1-based position), and checksum.
+
+Wallets made before v2 restore from their hex seed using `Wallet.fromSeedHex`.
+Old #1005 words derive a different account under v2. `Wallet.create()` remains a
+raw-seed API and does not create a phrase.
 
 ## Address is not public key
 
@@ -99,15 +115,15 @@ Never use `number` for amounts or timestamps. Timestamps are nanoseconds
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { Wallet, Xe, fromMicro } from '@xeprotocol/sdk'
 
-const SEED_FILE = 'wallet.seed'
+const PHRASE_FILE = 'wallet.phrase'
 const NODE = process.env['XE_NODE'] ?? 'https://ldn.core.test.network'
 
-// Reuse the wallet from last time, or make one and keep its seed.
-if (!existsSync(SEED_FILE)) {
-  writeFileSync(SEED_FILE, Wallet.create().seedHex(), { mode: 0o600 })
-  console.log(`created a new wallet; its seed is in ${SEED_FILE} — keep it safe`)
+// Reuse the backup or create one without overwriting any existing file.
+if (!existsSync(PHRASE_FILE)) {
+  writeFileSync(PHRASE_FILE, Wallet.generatePhrase() + '\n', { mode: 0o600, flag: 'wx' })
+  console.log(`created a wallet; back up ${PHRASE_FILE} securely`)
 }
-const wallet = Wallet.fromSeedHex(readFileSync(SEED_FILE, 'utf8').trim())
+const wallet = Wallet.fromPhrase(readFileSync(PHRASE_FILE, 'utf8'))
 
 const xe = new Xe({ client: NODE, wallet })
 console.log(`network  ${await xe.networkId()}`)

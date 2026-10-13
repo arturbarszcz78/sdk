@@ -52,7 +52,8 @@ retries, renting a machine, and holding a lease open.
 ```ts
 import { Wallet, Xe, fromMicro, toMicro } from '@xeprotocol/sdk'
 
-const wallet = Wallet.create()          // or Wallet.fromSeedHex(process.env.SEED)
+const phrase = Wallet.generatePhrase() // save securely before using the account; never log it
+const wallet = Wallet.fromPhrase(phrase)
 console.log(wallet.address)             // hand this out to receive funds
 
 const xe = new Xe({ client: 'https://ldn.core.test.network', wallet })
@@ -262,3 +263,33 @@ privately to `security@xe.network` first, never a public issue.
 ## License
 
 GPL-3.0, the same as the node. See [LICENSE](LICENSE).
+
+## Recovery phrase v2
+
+`Wallet.generatePhrase()` generates 24 English BIP39 words. Keep them securely
+before using `Wallet.fromPhrase(phrase, { passphrase, account })`; options default
+to an empty passphrase and account 0. The wallet retains only the signing seed,
+not the words or passphrase. `Wallet.validatePhrase(phrase)` returns normalized
+words or throws `PhraseError` with a typed `code`: `word_count`, `unknown_word`
+(with 1-based `position`), or `checksum`. Invalid indices throw code `account`.
+Errors never contain the entered words.
+
+Import accepts 12, 15, 18, 21 and 24 words. XE uses standard BIP39
+PBKDF2-HMAC-SHA512 and SLIP-0010 ed25519 at `m/44'/1'/account'`, all hardened.
+Account indices range from 0 through 2147483647. Coin type 1 is provisional;
+changing it changes every derived account. The address rule is unchanged.
+
+The recovery phrase is your only backup unless you separately save `seedHex()`.
+Anyone with the backup controls the account. Only opt into a BIP39 passphrase
+explicitly; avoid a weak one, keep it separately and never log it or put it on
+argv. A wrong passphrase opens a different, empty account. Passphrases use NFKD
+normalization and retain case and whitespace. The SDK never stores them.
+
+Wallets made before v2 restore from their hex seed. Old #1005 words have a valid
+BIP39 checksum but derive a different account under v2. `Wallet.create()` still
+creates a raw-seed wallet; `fromSeed` and `fromSeedHex` remain available, and a
+phrase cannot be computed from those seeds.
+
+The tests use a byte-for-byte copy of core's v2 recovery-phrase vectors in
+`test/fixtures/recovery-phrase-vectors.json`: all 24 official English BIP39
+vectors, both SLIP-0010 ed25519 chains, XE addresses, and typed errors.
