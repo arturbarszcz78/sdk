@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import vectorsJson from '../fixtures/recovery-phrase-vectors.json?raw'
 import { entropyToMnemonic, mnemonicToSeedSync } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english'
 import { sha256 } from '@noble/hashes/sha256'
@@ -18,7 +18,7 @@ interface Vectors {
   xe: { phrase: string; passphrase: string; account: number; ed25519_seed: string; public_key: string; address: string }[]
   invalid: { phrase: string; error: string; position?: number }[]
 }
-const vectors: Vectors = JSON.parse(readFileSync(new URL('../fixtures/recovery-phrase-vectors.json', import.meta.url), 'utf8'))
+const vectors: Vectors = JSON.parse(vectorsJson)
 
 describe('recovery phrase v2', () => {
   it('pins the shared file and English wordlist', () => {
