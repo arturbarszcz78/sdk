@@ -47,14 +47,18 @@ Coin type 1 is provisional; account defaults to 0. Import accepts 12, 15, 18, 21
 or 24 words. The phrase is your only backup unless you save the signing seed
 separately. It cannot be recovered from the signing seed.
 
-To keep a wallet between runs, save the phrase securely and load it back:
+To keep a wallet between runs, save the phrase as the backup and the signing
+seed it derives, then load the seed back. This is the same layout as the `xe`
+CLI, and the next tutorials load `wallet.seed`:
 
 ```ts
 import { readFileSync, writeFileSync } from 'node:fs'
 import { Wallet } from '@xeprotocol/sdk'
 
-writeFileSync('wallet.phrase', Wallet.generatePhrase() + '\n', { mode: 0o600, flag: 'wx' })
-const wallet = Wallet.fromPhrase(readFileSync('wallet.phrase', 'utf8'))
+const phrase = Wallet.generatePhrase()
+writeFileSync('wallet.phrase', phrase + '\n', { mode: 0o600, flag: 'wx' })
+writeFileSync('wallet.seed', Wallet.fromPhrase(phrase).seedHex(), { mode: 0o600, flag: 'wx' })
+const wallet = Wallet.fromSeedHex(readFileSync('wallet.seed', 'utf8').trim())
 ```
 
 `Wallet.fromPhrase(phrase, { passphrase, account })` supports an explicitly
@@ -115,15 +119,19 @@ Never use `number` for amounts or timestamps. Timestamps are nanoseconds
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { Wallet, Xe, fromMicro } from '@xeprotocol/sdk'
 
-const PHRASE_FILE = 'wallet.phrase'
+const PHRASE_FILE = 'wallet.phrase' // the backup
+const SEED_FILE = 'wallet.seed'     // the signing seed the next tutorials load
 const NODE = process.env['XE_NODE'] ?? 'https://ldn.core.test.network'
 
-// Reuse the backup or create one without overwriting any existing file.
-if (!existsSync(PHRASE_FILE)) {
-  writeFileSync(PHRASE_FILE, Wallet.generatePhrase() + '\n', { mode: 0o600, flag: 'wx' })
+// Reuse the wallet, or create a phrase once and save the seed it derives.
+// Neither file is ever overwritten.
+if (!existsSync(SEED_FILE)) {
+  const phrase = Wallet.generatePhrase()
+  writeFileSync(PHRASE_FILE, phrase + '\n', { mode: 0o600, flag: 'wx' })
+  writeFileSync(SEED_FILE, Wallet.fromPhrase(phrase).seedHex(), { mode: 0o600, flag: 'wx' })
   console.log(`created a wallet; back up ${PHRASE_FILE} securely`)
 }
-const wallet = Wallet.fromPhrase(readFileSync(PHRASE_FILE, 'utf8'))
+const wallet = Wallet.fromSeedHex(readFileSync(SEED_FILE, 'utf8').trim())
 
 const xe = new Xe({ client: NODE, wallet })
 console.log(`network  ${await xe.networkId()}`)
