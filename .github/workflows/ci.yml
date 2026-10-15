@@ -73,12 +73,8 @@ jobs:
           XE_FAUCET: https://faucet.test.network
       # Every tutorial's complete program, run for real. Leasing needs XUSD and
       # is skipped unless a funded seed is configured.
-      # Leases go only to provider p1 (26740934…c06b), one of the testnet's own
-      # providers: anyone can register a provider, and one that never accepts
-      # would fail the run.
       - run: npm run examples:live
         env:
           XE_NODE: https://ldn.core.test.network
           XE_FAUCET: https://faucet.test.network
           XE_LEASE_SEED: ${{ secrets.XE_LEASE_SEED }}
-          XE_PROVIDERS: 26740934b57627b340fd881710fbca3ab70f662e18a20fd21d4773aa6c56c06b
