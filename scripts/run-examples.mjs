@@ -16,18 +16,26 @@
 //   npm run build && npm run examples:live
 //   XE_LEASE_SEED=<hex seed holding XUSD> npm run examples:live
 //
+// XE_PROVIDERS=<account>[,<account>] limits the providers the programs see to
+// those accounts (scripts/pin-providers.mjs), so leases go only to providers
+// known to accept them.
+//
 // Needs Node 22.6+ (TypeScript runs through Node's own type stripping).
 
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = join(root, '.examples-run')
 const FENCE = /^```(ts|js) title="([\w.-]+)"\n([\s\S]*?)^```$/gm
 const LEASING = /^0[56]-/
 const leaseSeed = process.env['XE_LEASE_SEED']?.trim()
+const pin = process.env['XE_PROVIDERS']?.trim()
+  ? ['--import', pathToFileURL(join(root, 'scripts', 'pin-providers.mjs')).href]
+  : []
+if (pin.length) console.log(`providers pinned to ${process.env['XE_PROVIDERS'].trim()}`)
 
 const [major, minor] = process.versions.node.split('.').map(Number)
 if (major < 22 || (major === 22 && minor < 6)) {
@@ -96,7 +104,7 @@ for (const lang of ['typescript', 'javascript']) {
       const started = Date.now()
       const run = spawnSync(
         process.execPath,
-        ['--experimental-strip-types', '--no-warnings=ExperimentalWarning', file],
+        ['--experimental-strip-types', '--no-warnings=ExperimentalWarning', ...pin, file],
         { cwd, encoding: 'utf8', timeout: 10 * 60_000, env: { ...process.env, MINUTES: '2' } },
       )
       const secs = ((Date.now() - started) / 1000).toFixed(1)
@@ -128,7 +136,7 @@ for (const file of JOBS) {
   writeFileSync(join(jobsCwd, 'wallet.seed'), leaseSeed, { mode: 0o600 })
   writeFileSync(join(jobsCwd, file), readFileSync(join(root, 'examples', 'jobs', file), 'utf8'))
   const started = Date.now()
-  const run = spawnSync(process.execPath, ['--experimental-strip-types', '--no-warnings=ExperimentalWarning', file], {
+  const run = spawnSync(process.execPath, ['--experimental-strip-types', '--no-warnings=ExperimentalWarning', ...pin, file], {
     cwd: jobsCwd,
     encoding: 'utf8',
     timeout: 10 * 60_000,
