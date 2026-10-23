@@ -12,7 +12,7 @@ import { toAddress, toMicro } from '@xeprotocol/sdk'
 
 const result = await xe.send({
   to: toAddress('4feede759012ae67f4d4636322485f04e7d995525c6ce171da2601fdbe2e2a76'),
-  amount: toMicro('2.5'),
+  amount: toMicro('0.5'),
   memo: 'thanks for lunch', // optional, up to 64 bytes of UTF-8
 })
 console.log(result.hash)
