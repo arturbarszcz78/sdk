@@ -7,9 +7,10 @@ and learn why a fresh balance is not immediately spendable.
 
 ## Ask the faucet
 
-The testnet faucet sends **100 XE** to any address, once per rolling 24 hours,
-and at most 5 grants to one IP address in that window. It is a plain HTTP
-service, separate from the SDK:
+The testnet faucet sends **1 XE** a grant to any address: at most 5 grants to
+one address, and 5 to one IP address, in any 15 minutes. It refuses claims from
+VPN, proxy and hosting networks, so claim from a home or mobile connection. It
+is a plain HTTP service, separate from the SDK:
 
 ```js
 const res = await fetch('https://faucet.test.network/request', {
